@@ -27,6 +27,8 @@ py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r backend\requirements.txt
 py -m backend.app.cli init-db
+py -m backend.app.cli list-company-reports
+py -m backend.app.cli seed-company-report --company pfizer
 py -m backend.app.cli scrape-clinicaltrials --page-size 50 --max-studies 200
 py -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
 ```
@@ -46,6 +48,7 @@ Scraped records are provisional until they survive review and normalization. The
 
 - raw source records
 - canonical companies, indications, and products
+- imported company pipeline reports and report-program rows
 - scrape jobs
 - open review items for ambiguous names, phases, and indications
 
@@ -53,11 +56,28 @@ Scraped records are provisional until they survive review and normalization. The
 
 ```powershell
 py -m backend.app.cli init-db
+py -m backend.app.cli list-company-reports
+py -m backend.app.cli seed-company-report --company pfizer
+py -m backend.app.cli seed-pfizer
 py -m backend.app.cli scrape-clinicaltrials --page-size 50 --max-studies 200
 py -m backend.app.cli overview
+py -m backend.app.cli reports --limit 20
 py -m backend.app.cli review-queue --limit 20
 py -m backend.app.cli jobs --limit 10
 ```
+
+## Multi-company direction
+
+The backend is ready to expand past a single sponsor:
+
+- `companies` stores canonical organizations
+- `products` stores current asset state across all companies
+- `pipeline_reports` stores source snapshots like pipeline PDFs or portfolio decks
+- `pipeline_report_programs` stores the individual program rows imported from each report
+
+This means future company reports can be ingested into the same local backend without reworking the core data model each time.
+
+The current built-in report registry only includes `pfizer`, but the ingest flow is now keyed by company report instead of being hardwired to one one-off seed function.
 
 ## Environment
 

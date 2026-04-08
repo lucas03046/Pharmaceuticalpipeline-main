@@ -32,6 +32,9 @@ py -m backend.app.cli init-db
 py -m backend.app.cli scrape-clinicaltrials --page-size 50 --max-studies 200
 py -m backend.app.cli jobs --limit 10
 py -m backend.app.cli overview
+py -m backend.app.cli list-company-reports
+py -m backend.app.cli seed-company-report --company pfizer
+py -m backend.app.cli reports --limit 20
 ```
 
 Expected report back to Command:
@@ -56,6 +59,8 @@ Own:
 Primary command:
 
 ```powershell
+py -m backend.app.cli overview
+py -m backend.app.cli reports --limit 20
 py -m backend.app.cli review-queue --limit 20
 ```
 
@@ -69,3 +74,5 @@ Expected report back to Command:
 ## Non-negotiable rule
 
 Raw ingests are not truth. They are provisional until reviewed.
+
+See `docs/AGENT_SURFACES.md` for the current local API, CLI, and data-store contract that Ops and Investigation threads should use.

@@ -7,7 +7,13 @@
     "build": "vite build",
     "dev": "vite",
     "dev:frontend": "vite",
-    "backend:help": "py -m backend.app.cli --help"
+    "backend:help": "py -m backend.app.cli --help",
+    "backend:init": "py -m backend.app.cli init-db",
+    "backend:list:company-reports": "py -m backend.app.cli list-company-reports",
+    "backend:seed:company": "py -m backend.app.cli seed-company-report --company pfizer",
+    "backend:seed:pfizer": "py -m backend.app.cli seed-pfizer",
+    "backend:reports": "py -m backend.app.cli reports --limit 20",
+    "backend:run": "py -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

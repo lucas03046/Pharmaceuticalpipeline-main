@@ -91,6 +91,8 @@ CREATE TABLE IF NOT EXISTS products (
   nct_number TEXT UNIQUE,
   source_url TEXT,
   raw_title TEXT,
+  molecule TEXT,
+  modality TEXT,
   source_record_id TEXT,
   confidence_score REAL NOT NULL DEFAULT 0,
   is_provisional INTEGER NOT NULL DEFAULT 1,
@@ -98,6 +100,47 @@ CREATE TABLE IF NOT EXISTS products (
   updated_at TEXT NOT NULL,
   FOREIGN KEY (company_id) REFERENCES companies(id),
   FOREIGN KEY (indication_id) REFERENCES indications(id)
+);
+
+CREATE TABLE IF NOT EXISTS pipeline_reports (
+  id TEXT PRIMARY KEY,
+  company_id TEXT NOT NULL,
+  source_name TEXT NOT NULL,
+  source_type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  source_url TEXT NOT NULL,
+  snapshot_date TEXT,
+  imported_at TEXT NOT NULL,
+  metadata_json TEXT NOT NULL DEFAULT '{}',
+  UNIQUE(company_id, source_url, snapshot_date),
+  FOREIGN KEY (company_id) REFERENCES companies(id)
+);
+
+CREATE TABLE IF NOT EXISTS pipeline_report_programs (
+  id TEXT PRIMARY KEY,
+  report_id TEXT NOT NULL,
+  company_id TEXT NOT NULL,
+  product_id TEXT NOT NULL,
+  indication_id TEXT,
+  therapy_area_id TEXT,
+  product_name TEXT NOT NULL,
+  molecule TEXT,
+  modality TEXT,
+  indication_name TEXT,
+  phase TEXT NOT NULL,
+  status TEXT NOT NULL,
+  source_detail TEXT,
+  start_date TEXT,
+  source_program_key TEXT NOT NULL,
+  metadata_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(report_id, source_program_key),
+  FOREIGN KEY (report_id) REFERENCES pipeline_reports(id),
+  FOREIGN KEY (company_id) REFERENCES companies(id),
+  FOREIGN KEY (product_id) REFERENCES products(id),
+  FOREIGN KEY (indication_id) REFERENCES indications(id),
+  FOREIGN KEY (therapy_area_id) REFERENCES therapy_areas(id)
 );
 
 CREATE TABLE IF NOT EXISTS product_events (
@@ -138,6 +181,32 @@ def get_connection() -> sqlite3.Connection:
 def init_database() -> None:
     with get_connection() as connection:
         connection.executescript(SCHEMA)
+        _run_migrations(connection)
+
+
+def _run_migrations(connection: sqlite3.Connection) -> None:
+    _ensure_column(connection, "products", "molecule", "TEXT")
+    _ensure_column(connection, "products", "modality", "TEXT")
+    connection.executescript(
+        """
+        CREATE INDEX IF NOT EXISTS idx_products_company_id ON products(company_id);
+        CREATE INDEX IF NOT EXISTS idx_products_phase ON products(current_phase);
+        CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
+        CREATE INDEX IF NOT EXISTS idx_indications_therapy_area_id ON indications(therapy_area_id);
+        CREATE INDEX IF NOT EXISTS idx_product_events_product_id ON product_events(product_id);
+        CREATE INDEX IF NOT EXISTS idx_pipeline_reports_company_id ON pipeline_reports(company_id);
+        CREATE INDEX IF NOT EXISTS idx_pipeline_report_programs_report_id ON pipeline_report_programs(report_id);
+        CREATE INDEX IF NOT EXISTS idx_pipeline_report_programs_product_id ON pipeline_report_programs(product_id);
+        """
+    )
+
+
+def _ensure_column(connection: sqlite3.Connection, table_name: str, column_name: str, column_type_sql: str) -> None:
+    cursor = connection.execute(f"PRAGMA table_info({table_name})")
+    column_names = {row[1] for row in cursor.fetchall()}
+    if column_name in column_names:
+        return
+    connection.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type_sql}")
 
 
 @contextmanager

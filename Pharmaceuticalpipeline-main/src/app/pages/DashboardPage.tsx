@@ -8,19 +8,17 @@ import { Activity, Beaker, Building2, CheckCircle2 } from 'lucide-react';
 const BRAND_BAR_COLOR = '#6db5b5';
 
 export function DashboardPage() {
-  const { products, companies, getIndicationById, loading, error } = useAppData();
+  const { products, companies, getCompanyById, getIndicationById, loading, error } = useAppData();
 
   if (loading) {
     return <PageState description="Loading dashboard data from the local backend..." />;
   }
 
-  // Calculate statistics
   const totalProducts = products.length;
-  const activeProducts = products.filter(p => p.status === 'Active').length;
-  const approvedProducts = products.filter(p => p.status === 'Approved').length;
+  const activeProducts = products.filter((p) => p.status === 'Active').length;
+  const approvedProducts = products.filter((p) => p.status === 'Approved').length;
   const totalCompanies = companies.length;
 
-  // Products by phase
   const productsByPhase = products.reduce((acc, product) => {
     const phase = product.currentPhase;
     acc[phase] = (acc[phase] || 0) + 1;
@@ -33,7 +31,6 @@ export function DashboardPage() {
     color: getPhaseColor(phase as DevelopmentPhase),
   }));
 
-  // Products by therapy area
   const productsByTherapyArea = products.reduce((acc, product) => {
     const indication = getIndicationById(product.indicationId);
     const area = indication?.therapyArea || 'Unknown';
@@ -46,7 +43,6 @@ export function DashboardPage() {
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
 
-  // Recent updates
   const recentProducts = [...products]
     .sort((a, b) => new Date(b.lastUpdated || b.startDate).getTime() - new Date(a.lastUpdated || a.startDate).getTime())
     .slice(0, 5);
@@ -54,7 +50,6 @@ export function DashboardPage() {
   return (
     <div className="h-full overflow-auto">
       <div className="p-8 space-y-8">
-        {/* Header */}
         <div>
           <h1 className="text-3xl font-semibold mb-2">Dashboard</h1>
           <p className="text-slate-600">
@@ -64,37 +59,14 @@ export function DashboardPage() {
 
         {error && <BackendNotice message={error} />}
 
-        {/* Stats */}
         <div className="grid grid-cols-4 gap-6">
-          <StatCard
-            title="Total Products"
-            value={totalProducts}
-            icon={<Beaker className="size-5" />}
-            color="blue"
-          />
-          <StatCard
-            title="Active Programs"
-            value={activeProducts}
-            icon={<Activity className="size-5" />}
-            color="purple"
-          />
-          <StatCard
-            title="Approved"
-            value={approvedProducts}
-            icon={<CheckCircle2 className="size-5" />}
-            color="green"
-          />
-          <StatCard
-            title="Companies Tracked"
-            value={totalCompanies}
-            icon={<Building2 className="size-5" />}
-            color="orange"
-          />
+          <StatCard title="Total Products" value={totalProducts} icon={<Beaker className="size-5" />} color="blue" />
+          <StatCard title="Active Programs" value={activeProducts} icon={<Activity className="size-5" />} color="purple" />
+          <StatCard title="Approved" value={approvedProducts} icon={<CheckCircle2 className="size-5" />} color="green" />
+          <StatCard title="Companies Tracked" value={totalCompanies} icon={<Building2 className="size-5" />} color="orange" />
         </div>
 
-        {/* Charts */}
         <div className="grid grid-cols-2 gap-6">
-          {/* Pipeline by Phase */}
           <Card>
             <CardHeader>
               <CardTitle>Pipeline Distribution by Phase</CardTitle>
@@ -123,7 +95,6 @@ export function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Pipeline by Therapy Area */}
           <Card>
             <CardHeader>
               <CardTitle>Pipeline by Therapy Area</CardTitle>
@@ -142,7 +113,6 @@ export function DashboardPage() {
           </Card>
         </div>
 
-        {/* Recent Updates */}
         <Card>
           <CardHeader>
             <CardTitle>Recent Updates</CardTitle>
@@ -151,6 +121,8 @@ export function DashboardPage() {
             <div className="space-y-4">
               {recentProducts.map((product) => {
                 const indication = getIndicationById(product.indicationId);
+                const company = getCompanyById(product.companyId);
+
                 return (
                   <div
                     key={product.id}
@@ -158,6 +130,7 @@ export function DashboardPage() {
                   >
                     <div className="flex-1">
                       <div className="font-medium mb-1">{product.name}</div>
+                      <div className="text-sm text-slate-500 mb-1">{company?.name ?? 'Unknown company'}</div>
                       <div className="text-sm text-slate-600">
                         {indication?.name} • {indication?.therapyArea}
                       </div>
